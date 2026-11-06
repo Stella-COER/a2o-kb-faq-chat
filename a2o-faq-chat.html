@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A2O 知識庫問答</title>
+<style>
+  :root{
+    --bg-1:#eef1f8; --bg-2:#e6ecf7; --bg-3:#f4f1fb;
+    --card:#ffffff; --line:#e3e8f0;
+    --ink:#1c2333; --body:#5a6478; --muted:#98a2b8;
+    --brand:#5b5bf6; --brand-2:#8b5cf6; --brand-soft:#eef0ff;
+    --bubble-user:#5b5bf6; --bubble-user-ink:#ffffff;
+    --ok:#0f9d6e; --err:#d14343; --warn:#c07b14;
+    --shadow:0 18px 50px rgba(50,60,120,.14);
+    --radius:20px;
+    --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg-1:#0e1220; --bg-2:#12162a; --bg-3:#171232;
+      --card:#161b2e; --line:#252c44;
+      --ink:#eef1fa; --body:#aab3cd; --muted:#6b7594;
+      --brand:#7c7cff; --brand-2:#a78bfa; --brand-soft:#242a4d;
+      --bubble-user:#7c7cff;
+      --shadow:0 18px 50px rgba(0,0,0,.45);
+    }
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{height:100%}
+  body{
+    margin:0; font:15px/1.65 var(--font);
+    color:var(--ink); -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(900px 600px at 12% -10%, var(--brand-soft), transparent 60%),
+      radial-gradient(800px 520px at 100% 0%, rgba(139,92,246,.16), transparent 55%),
+      linear-gradient(160deg, var(--bg-1), var(--bg-2) 45%, var(--bg-3));
+    background-attachment:fixed;
+  }
+  input,textarea,button{font:inherit}
+
+  /* ── App shell ── */
+  #app{height:100%; display:flex; flex-direction:column; max-width:900px; margin:0 auto; padding:18px 16px 14px; gap:14px}
+
+  /* ── 頂部 ── */
+  .top{display:flex; align-items:center; gap:12px}
+  .logo{
+    width:44px;height:44px;border-radius:14px;flex:none;
+    display:grid;place-items:center;color:#fff;font-weight:800;font-size:16px;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2));
+    box-shadow:0 8px 20px rgba(91,91,246,.35);
+  }
+  .top h1{font-size:17px;margin:0;letter-spacing:.2px}
+  .top .sub{color:var(--body);font-size:12.5px;margin-top:1px}
+  .top .spacer{flex:1}
+  .ghost{
+    border:1px solid var(--line);background:var(--card);color:var(--body);
+    padding:7px 12px;border-radius:999px;cursor:pointer;font-size:13px;
+    transition:.15s;
+  }
+  .ghost:hover{color:var(--brand);border-color:var(--brand)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px}
+  .dot.on{background:var(--ok);box-shadow:0 0 0 3px rgba(15,157,110,.18)}
+  .dot.busy{background:var(--warn);animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.3}}
+
+  /* ── 設定面板 ── */
+  .setup-panel{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:22px;
+  }
+  .setup-panel h2{margin:0 0 4px;font-size:16px}
+  .setup-panel .intro{color:var(--body);font-size:13.5px;margin:0 0 6px}
+  .kb-list{margin:12px 0 18px;display:grid;gap:8px}
+  .kb-item{display:flex;align-items:flex-start;gap:10px;background:var(--brand-soft);border-radius:12px;padding:9px 12px}
+  .kb-item b{font-size:13.5px;display:block}
+  .kb-item span{font-size:12px;color:var(--body)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;margin-left:6px;vertical-align:1px}
+  .tag.now{background:#e3f6ee;color:var(--ok)}
+  .tag.old{background:#f3e9dc;color:var(--warn)}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12.5px;color:var(--body);margin-bottom:6px;font-weight:600}
+  .field input[type=password],.field select,.field input[type=text]{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:12px;
+    background:var(--card);color:var(--ink);outline:none;transition:.15s;
+  }
+  .field input:focus,.field select:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .keywrap{position:relative}
+  .keywrap .eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);cursor:pointer;padding:6px;font-size:14px}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .btn{
+    border:0;border-radius:12px;padding:12px 18px;font-weight:700;color:#fff;cursor:pointer;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2));
+    box-shadow:0 10px 24px rgba(91,91,246,.32);width:100%;font-size:14.5px;transition:.15s;
+  }
+  .btn:hover{filter:brightness(1.06)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+  .errbox{display:none;background:#fdecec;color:var(--err);border:1px solid #f5c6c6;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:12px}
+  .errbox.show{display:block}
+  .foot{font-size:11.5px;color:var(--muted);margin-top:14px;text-align:center}
+
+  /* ── 對話區 ── */
+  .chat{flex:1;display:flex;flex-direction:column;min-height:0}
+  .msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:6px 4px 18px;scroll-behavior:smooth}
+  .msg{display:flex;gap:10px;max-width:86%;animation:rise .3s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}}
+  .msg .avatar{width:34px;height:34px;border-radius:50%;flex:none;font-size:14px;display:grid;place-items:center;font-weight:800}
+  .msg.bot .avatar{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff}
+  .msg.user{align-self:flex-end;flex-direction:row-reverse}
+  .msg.user .avatar{background:#d6daea;color:#4a5470}
+  .bubble{padding:11px 15px;border-radius:16px;font-size:14px;line-height:1.7}
+  .msg.bot .bubble{background:var(--card);border:1px solid var(--line);border-top-left-radius:5px;box-shadow:0 6px 16px rgba(50,60,120,.06)}
+  .msg.user .bubble{background:var(--bubble-user);color:var(--bubble-user-ink);border-top-right-radius:5px}
+  .bubble .src{margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--body);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .bubble .src .chip{background:var(--brand-soft);color:var(--brand);padding:2px 9px;border-radius:999px;font-weight:700;font-size:11.5px}
+  .bubble .src .note{color:var(--muted)}
+  .typing .bubble{min-width:46px}
+  .typing .dots{display:inline-flex;gap:4px}
+  .typing .dots i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:ty 1.2s infinite}
+  .typing .dots i:nth-child(2){animation-delay:.15s}.typing .dots i:nth-child(3){animation-delay:.3s}
+  @keyframes ty{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+  .msgs .hint-empty{margin:auto;color:var(--muted);font-size:13px;text-align:center}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 2px 2px}
+  .chip-q{border:1px solid var(--line);background:var(--card);color:var(--body);padding:7px 13px;border-radius:999px;cursor:pointer;font-size:13px;transition:.15s}
+  .chip-q:hover{color:var(--brand);border-color:var(--brand)}
+  .composer{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:8px 8px 8px 16px;display:flex;align-items:flex-end;gap:8px;box-shadow:0 8px 24px rgba(50,60,120,.08)}
+  .composer textarea{flex:1;border:0;outline:none;resize:none;background:none;color:var(--ink);max-height:140px;font-size:14px;line-height:1.5;padding:8px 0}
+  .composer .send{
+    flex:none;width:42px;height:42px;border-radius:14px;border:0;cursor:pointer;color:#fff;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2));font-size:17px;
+    display:grid;place-items:center;transition:.15s;box-shadow:0 8px 18px rgba(91,91,246,.35);
+  }
+  .composer .send:hover{filter:brightness(1.07)}
+  .composer .send:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+
+  @media (max-width:560px){
+    #app{padding:12px 10px 10px}
+    .msg{max-width:92%}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 頂部 -->
+  <div class="top">
+    <div class="logo">A</div>
+    <div>
+      <h1>A2O 知識庫問答</h1>
+      <div class="sub">鹿溪衛浴（虛構）內部知識庫 · Groq 驅動</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="ghost" id="resetBtn" hidden>↺ 新對話</button>
+  </div>
+
+  <!-- 設定面板 -->
+  <div class="setup-panel" id="setupPanel">
+    <h2>開始使用</h2>
+    <p class="intro">這是根據「A2O 練習包 · 情境三_新人須知」做的知識庫問答。先貼上你的 Groq API 金鑰。只回答知識庫裡有寫的內容。</p>
+    <div class="kb-list">
+      <div class="kb-item"><div><b>新人須知_2026 版 <span class="tag now">現行</span></b><span>上班請假、客戶詢問、報價權限、對外承諾、客訴三段式、找誰</span></div></div>
+      <div class="kb-item"><div><b>新人須知_2024 版 <span class="tag old">已停用</span></b><span>舊版規定，已被 2026 版取代（例如客訴 24 小時、9 折權限、紙本請假）</span></div></div>
+      <div class="kb-item"><div><b>報價流程</b><span>報價步驟、折扣權限、海外報價、報價單有效期</span></div></div>
+      <div class="kb-item"><div><b>退換貨辦法</b><span>14 天期限、可退換情況、不可退換情況、包裝破損、誰能承諾</span></div></div>
+    </div>
+    <div class="field">
+      <label for="key">Groq API Key</label>
+      <div class="keywrap">
+        <input type="password" id="key" placeholder="gsk_…" autocomplete="off" spellcheck="false">
+        <button class="eye" id="eye" type="button" title="顯示/隱藏">👁</button>
+      </div>
+      <div class="hint">金鑰只存在這個瀏覽器（localStorage），不會寫進檔案。可到 <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> 免費申請。首次輸入會自動驗證。</div>
+    </div>
+    <div class="field">
+      <label for="model">模型</label>
+      <select id="model">
+        <option value="openai/gpt-oss-120b" selected>GPT-OSS 120B（推薦）</option>
+        <option value="openai/gpt-oss-20b">GPT-OSS 20B（較快）</option>
+        <option value="qwen/qwen3.8-27b">Qwen 3.8 27B（預覽）</option>
+      </select>
+    </div>
+    <button class="btn" id="startBtn">載入知識庫，開始聊天 →</button>
+    <div class="errbox" id="errbox"></div>
+    <div class="foot">資料來源：A2O練習包 / 情境三_新人須知（四份文件）。模型回答附出處，僅供課程練習。</div>
+  </div>
+
+  <!-- 對話區 -->
+  <div class="chat" id="chat" hidden>
+    <div class="msgs" id="msgs"></div>
+    <div class="chips" id="chips" hidden>
+      <button class="chip-q" data-q="客訴要多久內回覆？">客訴要多久內回覆？</button>
+      <button class="chip-q" data-q="業務最多可以給客戶幾折？">業務最多可以給幾折？</button>
+      <button class="chip-q" data-q="客人安裝買錯尺寸可以退嗎？">買錯尺寸可以退嗎？</button>
+      <button class="chip-q" data-q="報價單有效多久？">報價單有效多久？</button>
+      <button class="chip-q" data-q="2024 版的客訴回覆時間規定？">2024 版客訴規定？</button>
+    </div>
+    <div class="composer">
+      <textarea id="input" placeholder="輸入你的問題…（Enter 送出，Shift+Enter 換行）" rows="1"></textarea>
+      <button class="send" id="send" title="送出">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   A2O 知識庫問答（單頁 HTML）
+   - 知識庫：A2O練習包 / 情境三_新人須知 四份文件（內嵌）
+   - 模型：Groq Chat Completions（需使用者自行輸入 API Key）
+   - 金鑰只存瀏覽器，不寫進檔案
+   ═══════════════════════════════════════════════════════════════ */
+
+const $ = s => document.querySelector(s);
+
+/* ── 知識庫資料（情境三_新人須知） ── */
+const KB = [
+  { title:"新人須知_2026版", active:true, summary:"上班請假、客戶詢問、報價權限、對外承諾、客訴三段式、找誰",
+    body:`上班時間 08:30–17:30，午休 12:00–13:00。請假在人資系統線上申請，前一天下班前送出；臨時病假當天 09:00 前打給主管。
+客戶詢問：一般詢問 1 個工作天內回覆；客訴 4 個工作小時內先回第一封，說明已收到、誰負責、何時再回。所有詢問都要登記在案件庫，寫清楚客戶、產品、狀態。
+報價權限：業務可以給到牌價 95 折；低於 95 折，或單筆金額超過新台幣 50 萬元，要業務主管核准；海外報價一律經業務主管。詳細步驟看「報價流程」。
+退換貨：收貨 14 天內可申請，詳細規定看「退換貨辦法」。
+對外承諾：交期、認證、保固只能照公司文件講，文件沒寫的不要自己答應；免費到府、賠償、折讓、「保證」這類承諾一律要主管核准，不可以先答應客戶；產品對外說法以「產品母稿」為準。
+客訴回覆三段式：1. 先接住情緒（謝謝告知、造成困擾很抱歉）；2. 再說明處理（需要客戶提供什麼、我們會怎麼做）；3. 最後留窗口（誰負責、什麼時候再回）。
+找誰：規格、認證、品質→品保課王課長；價格、交期、報價核准→業務主管劉經理；退換貨、出貨→物流課江組長。` },
+  { title:"新人須知_2024版（已停用）", active:false, summary:"舊版，已被 2026 版取代",
+    body:`警告：本文件為 2024 舊版，已停用，並已被「新人須知_2026版」取代。若與 2026 版衝突，一律以 2026 版為準。
+舊版內容：上班時間 08:30–17:30，午休 12:00–13:00；請假填紙本假單交給主管簽名。一般詢問盡量當天回覆；客訴 24 小時內回覆；詢問記在業務自己的 Excel。報價權限：業務可給到牌價 9 折；低於 9 折或單筆超過新台幣 100 萬元要業務主管核准。退換貨：收貨 7 天內可以退換貨。交期請跟物流確認後再回覆客戶。找誰：規格、品質→品保課王課長；價格、交期→業務主管劉經理。` },
+  { title:"報價流程", active:true, summary:"報價步驟、折扣權限、海外報價、報價單有效期",
+    body:`報價步驟：1. 確認客戶要的型號、數量、交貨地點、希望時間；2. 查牌價表算出報價；3. 折扣在權限內→業務直接出報價單；4. 折扣超過權限→送業務主管核准後再出；5. 報價單寄出後在案件庫把狀態改成「已回覆」。
+折扣權限：業務=牌價 95 折以內；低於 95 折或單筆超過新台幣 50 萬元→業務主管核准；海外報價一律業務主管核准，涉及認證的同時給品保課確認。
+報價單：有效期 30 天；交期寫「訂單確認後由業務回覆」，不寫死日期。` },
+  { title:"退換貨辦法", active:true, summary:"期限、可退換、不可退換、包裝破損、誰能承諾",
+    body:`期限：收貨 14 天內提出申請。
+可退換：未拆封、未安裝→可退貨，全額退款；產品瑕疵（例如滴水、鍍層剝落）→換新品，運費公司負擔；少零件→補寄缺少的零件，不用寄回整組。
+不可退換：已安裝、非產品瑕疵（例如買錯尺寸）；人為損壞、未依說明書安裝。
+包裝破損：簽收時發現外箱破損，請當場拍照，3 天內通報業務或客服；超過 3 天才通報要由物流課判斷。
+誰能承諾：第 2 節（可退換）以內的處理客服可以直接答應；第 2 節以外的處理（例如免費到府、賠償）要主管核准。` },
+];
+
+/* 疊出給模型看的知識庫全文（含版本與出處） */
+function kbContext(){
+  return KB.map(d => `【文件：${d.title}】${d.active ? "" : "（已停用，僅供對照；與現行版衝突時以現行版為準）"}\n${d.body}`).join("\n\n");
+}
+
+const SYSTEM = `你是「鹿溪衛浴」（虛構公司，A2O 練習包課程使用）內部的知識庫問答助手，職責是依據公司文件回答員工或業務的詢問。
+規則：
+1. 只能根據以下提供的公司文件回答，不可以自行編造或延伸文件沒寫的內容。
+2. 回答時務必註明「來源文件」名稱（每個答案結尾附一行【來源：文件1、文件2…】）。
+3. 公司有多版文件：優先以現行版為準；若現行版與舊版衝突，明確指出以哪一版為準，並可補充舊版差異。
+4. 若問題在知識庫中找不到答案，請老實說「知識庫沒有記載，無法回答」，不要硬湊。
+5. 條列式簡潔回答，繁體中文，口吻專業但友善。
+6. 若問題涉及承諾、折扣、時限，需同時標示對應文件與條文。
+以下為知識庫內容：\n\n${kbContext()}`;
+
+/* ── Groq 呼叫 ── */
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+async function groqChat(key, model, messages, {signal}={}){
+  const res = await fetch(GROQ_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+key },
+    body: JSON.stringify({ model, messages, temperature:0.3, stream:false }),
+    signal
+  });
+  const j = await res.json().catch(()=>({}));
+  if (!res.ok){
+    const msg = j.error?.message || j.message || (res.status+"");
+    if (res.status===401) throw new Error("金鑰無效（401）：請檢查 groq API key 是否正確");
+    throw new Error(res.status+" "+msg);
+  }
+  return j.choices?.[0]?.message?.content?.trim() || "";
+}
+
+/* ── UI 狀態 ── */
+const state = { key: localStorage.getItem("groq_key")||"", ready:false, busy:false };
+
+function showErr(t){ const e=$("#errbox"); e.textContent=t; e.classList.add("show"); }
+function hideErr(){ $("#errbox").classList.remove("show"); }
+
+const canSend = () => state.ready && !state.busy;
+function refreshSend(){ $("#send").disabled = !canSend(); }
+
+const msgs=$("#msgs");
+function addMsg(role, html, src){
+  const m=document.createElement("div");
+  m.className="msg "+role;
+  const av=document.createElement("div"); av.className="avatar";
+  av.textContent = role==="bot" ? "A" : "我";
+  const b=document.createElement("div"); b.className="bubble";
+  b.innerHTML = html;
+  if(src){
+    const s=document.createElement("div"); s.className="src";
+    s.innerHTML = src.map(x=>`<span class="chip">${esc(x)}</span>`).join("") + `<span class="note">來源文件</span>`;
+    b.appendChild(s);
+  }
+  m.append(av,b); msgs.appendChild(m); msgs.scrollTop=msgs.scrollHeight;
+}
+function addTyping(){
+  const m=document.createElement("div"); m.className="msg bot typing";
+  const av=document.createElement("div"); av.className="avatar"; av.textContent="A";
+  const b=document.createElement("div"); b.className="bubble";
+  b.innerHTML=`<span class="dots"><i></i><i></i><i></i></span>`;
+  m.append(av,b); msgs.appendChild(m); msgs.scrollTop=msgs.scrollHeight;
+  return m;
+}
+function esc(s){ return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function markdownish(s){
+  return esc(s)
+    .replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>")
+    .replace(/【来源：([^】]+)】/g,'<span style="display:none">[$1]</span>')
+    .replace(/【來源：([^】]+)】/g,'<span style="display:none">[$1]</span>')
+    .replace(/\n/g,"<br>");
+}
+function parseSrc(text){
+  const m=text.match(/【(?:來源|来源)：([^】]+)】/);
+  if(!m) return [];
+  return m[1].split(/[、,，]/).map(s=>s.trim()).filter(Boolean);
+}
+
+async function ask(q){
+  if(!canSend()) return;
+  state.busy=true; refreshSend();
+  hideErr();
+  addMsg("user", esc(q));
+
+  const typing=addTyping();
+  const history = [];
+  // 保留最近 6 則訊息當對話記憶，避免 Context 無限成長
+  msgs.querySelectorAll(".msg:not(.typing)").forEach(m=>{
+    const role = m.classList.contains("user") ? "user" : "assistant";
+    const bubble = m.querySelector(".bubble");
+    let text = bubble ? bubble.textContent.replace(/\s+\n/g,"\n") : "";
+    if(role==="assistant") text = text.replace(/來源文件.*$/s,"").trim();
+    if(text.trim()) history.push({role, content:text.trim()});
+  });
+  const messages = [{role:"system", content:SYSTEM}, ...history];
+
+  try{
+    const answer = await groqChat(state.key, $("#model").value, messages);
+    typing.remove();
+    const src = parseSrc(answer);
+    const html = answer.trim()
+      .replace(/【來源：([^】]+)】/g,"")
+      .replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>")
+      .replace(/\n/g,"<br>");
+    addMsg("bot", html, src.length?src:null);
+  }catch(e){
+    typing.remove();
+    addMsg("bot", `<b>⚠ 出錯了</b><br>${esc(e.message)}<br><br><span style="color:var(--muted);font-size:12.5px">請檢查金鑰或網路，再試一次。</span>`);
+    if(/金鑰/.test(e.message)){ state.ready=false; $("#setupPanel").hidden=false; $("#chat").hidden=true; }
+  }finally{
+    state.busy=false; refreshSend();
+  }
+}
+
+/* ── 事件 ── */
+$("#eye").onclick = () => {
+  const k=$("#key"); k.type = k.type==="password" ? "text" : "password";
+};
+$("#key").value = state.key;
+$("#key").oninput = () => { state.key=$("#key").value.trim(); hideErr(); };
+
+$("#startBtn").onclick = async () => {
+  hideErr();
+  const key=$("#key").value.trim();
+  if(!key){ showErr("請先輸入 Groq API 金鑰。"); return; }
+  state.key=key;
+  const btn=$("#startBtn"); btn.disabled=true; btn.textContent="驗證金鑰中…";
+  try{
+    // 用極簡訊息驗證金鑰與模型
+    await groqChat(key, $("#model").value, [{role:"user", content:"ping"}], {signal:AbortSignal.timeout(20000)});
+    localStorage.setItem("groq_key", key);
+    state.ready=true;
+    $("#setupPanel").hidden=true; $("#chat").hidden=false;
+    $("#resetBtn").hidden=false;
+    $("#chips").hidden=false;
+    // 歡迎訊息
+    addMsg("bot","你好！我是 <b>鹿溪衛浴</b>（虛構）內部知識庫助手。\n\n可以問我新人須知、報價規則、退換貨辦法等問題，我會附上來源文件。<br><br><span style=\"color:var(--muted);font-size:12.5px\">例：客訴多久要回覆？業務能給幾折？</span>");
+    $("#input").focus();
+  }catch(e){
+    showErr("驗證失敗： "+e.message);
+  }finally{
+    btn.disabled=false; btn.textContent="載入知識庫，開始聊天 →";
+  }
+};
+
+function sendNow(){
+  const v=$("#input").value.trim();
+  if(!v || !canSend()) return;
+  $("#input").value=""; autoGrow();
+  ask(v);
+}
+$("#send").onclick = sendNow;
+$("#input").addEventListener("keydown", e=>{
+  if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendNow(); }
+});
+function autoGrow(){ const t=$("#input"); t.style.height="auto"; t.style.height=Math.min(t.scrollHeight,140)+"px"; }
+$("#input").addEventListener("input", autoGrow);
+
+$("#chips").addEventListener("click", e=>{
+  const b=e.target.closest(".chip-q"); if(b) ask(b.dataset.q);
+});
+$("#resetBtn").onclick = () => {
+  msgs.innerHTML="";
+  $("#chips").hidden=false;
+  addMsg("bot","已開啟新對話，請問你想了解什麼？");
+};
+
+refreshSend();
+</script>
+</body>
+</html>
